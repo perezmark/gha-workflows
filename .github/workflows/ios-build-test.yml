@@ -1,0 +1,72 @@
+name: iOS Build & Test
+
+on:
+  workflow_call:
+    inputs:
+      scheme:
+        required: true
+        type: string
+      project_path:
+        required: true
+        type: string
+      xcode_version:
+        default: '16.2'
+        type: string
+      destination:
+        default: 'platform=iOS Simulator,name=iPhone 16'
+        type: string
+      build_settings:
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          XCODE_PATH="/Applications/Xcode_${{ inputs.xcode_version }}.app"
+          if [ -d "$XCODE_PATH" ]; then
+            sudo xcode-select -s "$XCODE_PATH/Contents/Developer"
+          fi
+          xcodebuild -version
+
+      - name: Cache SPM
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/spm-cache
+          key: spm-${{ hashFiles('Package.resolved') }}
+          restore-keys: spm-
+
+      - name: Resolve dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "${{ inputs.project_path }}" \
+            -scheme "${{ inputs.scheme }}" \
+            -clonedSourcePackagesDirPath "${{ runner.temp }}/spm-cache"
+
+      - name: Build
+        run: |
+          xcodebuild build-for-testing \
+            -project "${{ inputs.project_path }}" \
+            -scheme "${{ inputs.scheme }}" \
+            -destination "${{ inputs.destination }}" \
+            -clonedSourcePackagesDirPath "${{ runner.temp }}/spm-cache" \
+            CODE_SIGNING_ALLOWED=NO \
+            ${{ inputs.build_settings }}
+
+      - name: Test
+        run: |
+          xcodebuild test-without-building \
+            -project "${{ inputs.project_path }}" \
+            -scheme "${{ inputs.scheme }}" \
+            -destination "${{ inputs.destination }}" \
+            -clonedSourcePackagesDirPath "${{ runner.temp }}/spm-cache" \
+            CODE_SIGNING_ALLOWED=NO \
+            ${{ inputs.build_settings }}

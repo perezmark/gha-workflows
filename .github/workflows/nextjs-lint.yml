@@ -1,0 +1,58 @@
+name: Next.js Lint & Typecheck
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        description: 'Node.js version'
+        required: false
+        default: '20'
+        type: string
+      prisma_generate:
+        description: 'Run npx prisma generate before lint'
+        required: false
+        default: false
+        type: boolean
+      lint_command:
+        description: 'Lint command to run'
+        required: false
+        default: 'npm run lint'
+        type: string
+      typecheck:
+        description: 'Run tsc --noEmit'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    concurrency:
+      group: lint-${{ github.ref }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        if: inputs.prisma_generate
+        run: npx prisma generate
+
+      - name: Lint
+        run: ${{ inputs.lint_command }}
+
+      - name: Typecheck
+        if: inputs.typecheck
+        run: npx tsc --noEmit

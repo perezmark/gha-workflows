@@ -1,0 +1,29 @@
+name: Tag Release & Changelog
+
+on:
+  workflow_call:
+    inputs:
+      tag_name:
+        description: 'Tag name (e.g., v1.0.3)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create GitHub Release with changelog
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ inputs.tag_name }}" \
+            --title "${{ inputs.tag_name }}" \
+            --generate-notes
