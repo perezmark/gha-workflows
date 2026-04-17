@@ -20,10 +20,84 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create GitHub Release with changelog
+      - name: Generate changelog
+        id: changelog
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          TAG="${{ inputs.tag_name }}"
+          REPO="${{ github.repository }}"
+
+          PREV_TAG=$(git tag --sort=-version:refname --list 'v*' | grep -v "^${TAG}$" | head -n1 || true)
+
+          if [ -n "${PREV_TAG}" ]; then
+            RANGE="${PREV_TAG}..${TAG}"
+            COMPARE_URL="https://github.com/${REPO}/compare/${PREV_TAG}...${TAG}"
+          else
+            RANGE="${TAG}"
+            COMPARE_URL="https://github.com/${REPO}/commits/${TAG}"
+          fi
+
+          render_group() {
+            local regex="$1"
+            local heading="$2"
+            local lines
+            lines=$(git log "${RANGE}" --no-merges --pretty=format:'%H%x09%s' \
+              | awk -F'\t' -v re="${regex}" 'tolower($2) ~ re { print $0 }' || true)
+            if [ -n "${lines}" ]; then
+              printf '%s\n\n' "${heading}"
+              while IFS=$'\t' read -r sha subject; do
+                local short="${sha:0:7}"
+                local cleaned
+                cleaned=$(printf '%s' "${subject}" | sed -E 's/^[a-zA-Z]+(\([^)]+\))?!?:[[:space:]]*//')
+                local scope
+                scope=$(printf '%s' "${subject}" | sed -nE 's/^[a-zA-Z]+\(([^)]+)\)!?:.*/\1/p')
+                if [ -n "${scope}" ]; then
+                  printf -- '- **%s:** %s ([%s](https://github.com/%s/commit/%s))\n' "${scope}" "${cleaned}" "${short}" "${REPO}" "${sha}"
+                else
+                  printf -- '- %s ([%s](https://github.com/%s/commit/%s))\n' "${cleaned}" "${short}" "${REPO}" "${sha}"
+                fi
+              done <<< "${lines}"
+              printf '\n'
+            fi
+          }
+
+          {
+            render_group '^feat(\(|!|:)'      '### ✨ Features'
+            render_group '^fix(\(|!|:)'       '### 🐛 Bug Fixes'
+            render_group '^perf(\(|!|:)'      '### ⚡ Performance'
+            render_group '^refactor(\(|!|:)'  '### ♻️ Refactoring'
+            render_group '^revert(\(|!|:)'    '### ⏪ Reverts'
+            render_group '^docs(\(|!|:)'      '### 📚 Documentation'
+            render_group '^test(\(|!|:)'      '### ✅ Tests'
+            render_group '^build(\(|!|:)'     '### 📦 Build'
+            render_group '^ci(\(|!|:)'        '### 🤖 CI'
+            render_group '^chore(\(|!|:)'     '### 🧹 Chores'
+            render_group '^style(\(|!|:)'     '### 💄 Style'
+
+            OTHER=$(git log "${RANGE}" --no-merges --pretty=format:'%H%x09%s' \
+              | awk -F'\t' 'tolower($2) !~ /^(feat|fix|perf|refactor|revert|docs|test|build|ci|chore|style)(\(|!|:)/ { print $0 }' || true)
+            if [ -n "${OTHER}" ]; then
+              printf '### 🔀 Other Changes\n\n'
+              while IFS=$'\t' read -r sha subject; do
+                short="${sha:0:7}"
+                printf -- '- %s ([%s](https://github.com/%s/commit/%s))\n' "${subject}" "${short}" "${REPO}" "${sha}"
+              done <<< "${OTHER}"
+              printf '\n'
+            fi
+
+            printf -- '**Full Changelog**: %s\n' "${COMPARE_URL}"
+          } > CHANGES.md
+
+          echo "----- CHANGES.md -----"
+          cat CHANGES.md
+          echo "----------------------"
+
+      - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ inputs.tag_name }}" \
             --title "${{ inputs.tag_name }}" \
-            --generate-notes
+            --notes-file CHANGES.md
