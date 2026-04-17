@@ -1,0 +1,16 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    uses: ./.github/workflows/tag-release-changelog.yml
+    with:
+      tag_name: ${{ github.ref_name }}
+    permissions:
+      contents: write

@@ -6,10 +6,22 @@ Shared reusable GitHub Actions workflows for personal projects.
 
 | Workflow | Purpose | Used by |
 |----------|---------|---------|
-| `tag-release-changelog.yml` | Create GitHub Release with auto-generated changelog | synqevent, synqbeam, synqevent-ios |
+| `tag-release-changelog.yml` | Create GitHub Release with auto-generated changelog | synqevent, synqbeam, synqevent-ios, gha-workflows |
+| `release.yml` | Self-release trigger: on `v*` tag push, calls `tag-release-changelog.yml` locally | gha-workflows (this repo) |
 | `nextjs-lint.yml` | ESLint + TypeScript type checking for Next.js | synqevent, synqbeam |
 | `ios-build-test.yml` | Build & test iOS project on Simulator | synqevent-ios |
 | `ios-appstore.yml` | Archive & upload IPA to App Store Connect | synqevent-ios |
+
+## Versioning this repo
+
+This repo versions itself. Push a semver tag and `release.yml` fires, which calls `tag-release-changelog.yml` to create the GitHub Release with auto-generated notes:
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Consumers pin to `@main` today; once stable, pin to a tag (e.g. `@v1.0.0`) for reproducibility.
 
 ## Usage
 
