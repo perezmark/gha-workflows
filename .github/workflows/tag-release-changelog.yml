@@ -64,20 +64,20 @@ jobs:
           }
 
           {
-            render_group '^feat(\(|!|:)'      '### ✨ Features'
-            render_group '^fix(\(|!|:)'       '### 🐛 Bug Fixes'
-            render_group '^perf(\(|!|:)'      '### ⚡ Performance'
-            render_group '^refactor(\(|!|:)'  '### ♻️ Refactoring'
-            render_group '^revert(\(|!|:)'    '### ⏪ Reverts'
-            render_group '^docs(\(|!|:)'      '### 📚 Documentation'
-            render_group '^test(\(|!|:)'      '### ✅ Tests'
-            render_group '^build(\(|!|:)'     '### 📦 Build'
-            render_group '^ci(\(|!|:)'        '### 🤖 CI'
-            render_group '^chore(\(|!|:)'     '### 🧹 Chores'
-            render_group '^style(\(|!|:)'     '### 💄 Style'
+            render_group '^feat[(!:]'      '### ✨ Features'
+            render_group '^fix[(!:]'       '### 🐛 Bug Fixes'
+            render_group '^perf[(!:]'      '### ⚡ Performance'
+            render_group '^refactor[(!:]'  '### ♻️ Refactoring'
+            render_group '^revert[(!:]'    '### ⏪ Reverts'
+            render_group '^docs[(!:]'      '### 📚 Documentation'
+            render_group '^test[(!:]'      '### ✅ Tests'
+            render_group '^build[(!:]'     '### 📦 Build'
+            render_group '^ci[(!:]'        '### 🤖 CI'
+            render_group '^chore[(!:]'     '### 🧹 Chores'
+            render_group '^style[(!:]'     '### 💄 Style'
 
             OTHER=$(git log "${RANGE}" --no-merges --pretty=format:'%H%x09%s' \
-              | awk -F'\t' 'tolower($2) !~ /^(feat|fix|perf|refactor|revert|docs|test|build|ci|chore|style)(\(|!|:)/ { print $0 }' || true)
+              | awk -F'\t' 'tolower($2) !~ /^(feat|fix|perf|refactor|revert|docs|test|build|ci|chore|style)[(!:]/ { print $0 }' || true)
             if [ -n "${OTHER}" ]; then
               printf '### 🔀 Other Changes\n\n'
               while IFS=$'\t' read -r sha subject; do
