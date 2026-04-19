@@ -19,7 +19,7 @@ on:
         required: true
         type: string
       xcode_version:
-        default: '16.2'
+        default: '26.3'
         type: string
       override_build_number:
         default: ''
@@ -113,10 +113,8 @@ jobs:
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -destination "generic/platform=iOS" \
             -clonedSourcePackagesDirPath "$RUNNER_TEMP/spm-cache" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            -skipPackagePluginValidation \
             DEVELOPMENT_TEAM="${{ inputs.team_id }}" \
-            PROVISIONING_PROFILE_SPECIFIER="${{ inputs.provisioning_profile_name }}" \
             ${{ inputs.build_settings }} \
             $VERSION_FLAGS
 
